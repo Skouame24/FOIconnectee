@@ -1,3 +1,5 @@
+'use client'
+
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,6 +9,7 @@ import { VerseOfDay } from "@/components/verse-of-day";
 import { ReadingPlans } from "@/components/reading-plans";
 import { RecentTestimonies } from "@/components/recent-testimonies";
 import { FeaturedBooks } from "@/components/featured-books";
+import { FeaturedVideos } from "@/components/featured-videos";
 import { Footer } from "@/components/footer";
 
 export default function Home() {
@@ -60,6 +63,9 @@ export default function Home() {
           </div>
           <ReadingPlans />
         </section>
+
+        {/* Featured Videos Section */}
+        <FeaturedVideos />
 
         {/* Featured Books */}
         <section>
