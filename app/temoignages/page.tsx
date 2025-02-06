@@ -1,13 +1,19 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TestimonyList } from "@/components/testimonies/testimony-list"
-import { TestimonyForm } from "@/components/testimonies/testimony-form"
 import { TestimonyFilters } from "@/components/testimonies/testimony-filters"
 import { PlusCircle } from "lucide-react"
+
+// Charge dynamiquement le formulaire côté client uniquement
+const TestimonyForm = dynamic(
+  () => import("@/components/testimonies/testimony-form").then(mod => mod.TestimonyForm),
+  { ssr: false }
+)
 
 export default function TemoignagesPage() {
   const [showForm, setShowForm] = useState(false)
