@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { BookMarked, BookOpen, MessageCircle, User2, Video } from "lucide-react"
+import { BookMarked, BookOpen, MessageCircle, User2, Video, Settings, Heart, LogOut, Bell, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Sheet,
   SheetContent,
@@ -17,6 +17,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -24,6 +26,14 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    const savedUser = localStorage.getItem("user")
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
 
   const navItems = [
     { href: "/bible", icon: BookMarked, label: "Bible" },
@@ -33,7 +43,14 @@ export function Navbar() {
   ]
 
   const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
     setUser(null)
+  }
+
+  const handleAuthSuccess = (userData: any) => {
+    setUser(userData)
+    localStorage.setItem("user", JSON.stringify(userData))
   }
 
   return (
@@ -72,10 +89,47 @@ export function Navbar() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="font-medium">{user.name}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    Se déconnecter
+                <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center cursor-pointer">
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      <span>Mon profil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/notifications" className="flex items-center cursor-pointer">
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Notifications</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/favoris" className="flex items-center cursor-pointer">
+                      <Heart className="mr-2 h-4 w-4" />
+                      <span>Mes favoris</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Paramètres</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Se déconnecter</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -134,7 +188,7 @@ export function Navbar() {
       <AuthDialog 
         open={showAuthDialog} 
         onClose={() => setShowAuthDialog(false)}
-        onSuccess={setUser}
+        onSuccess={handleAuthSuccess}
       />
     </>
   )

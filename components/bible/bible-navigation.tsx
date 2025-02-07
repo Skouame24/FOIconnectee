@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -11,26 +11,60 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import bibleApi, { Book } from "@/lib/api/bible"
 
-const bibleBooks = {
-  "Ancien Testament": [
-    { name: "Genèse", chapters: 50 },
-    { name: "Exode", chapters: 40 },
-    { name: "Lévitique", chapters: 27 },
-    // Add more books
-  ],
-  "Nouveau Testament": [
-    { name: "Matthieu", chapters: 28 },
-    { name: "Marc", chapters: 16 },
-    { name: "Luc", chapters: 24 },
-    // Add more books
-  ]
+interface BibleNavigationProps {
+  onBookSelect: (bookId: string) => void;
+  onChapterSelect: (chapter: number) => void;
+  selectedBook: string | null;
+  selectedChapter: number | null;
 }
 
-export function BibleNavigation() {
+export function BibleNavigation({ 
+  onBookSelect, 
+  onChapterSelect, 
+  selectedBook, 
+  selectedChapter 
+}: BibleNavigationProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedBook, setSelectedBook] = useState<string | null>(null)
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null)
+  const [books, setBooks] = useState<{ [key: string]: Book[] }>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const booksData = await bibleApi.getBooks();
+        // Organiser les livres par testament
+        const organizedBooks = booksData.reduce((acc: { [key: string]: Book[] }, book: Book) => {
+          if (!acc[book.testament]) {
+            acc[book.testament] = [];
+          }
+          acc[book.testament].push(book);
+          return acc;
+        }, {} as { [key: string]: Book[] });
+        
+
+        
+        setBooks(organizedBooks);
+      } catch (err) {
+        setError("Erreur lors du chargement des livres");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
+
+  if (loading) {
+    return <div>Chargement...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -46,28 +80,28 @@ export function BibleNavigation() {
       </div>
       <ScrollArea className="h-[calc(100vh-20rem)]">
         <Accordion type="single" collapsible className="w-full">
-          {Object.entries(bibleBooks).map(([testament, books]) => (
+          {Object.entries(books).map(([testament, testamentBooks]) => (
             <AccordionItem key={testament} value={testament}>
               <AccordionTrigger className="text-sm font-medium">
                 {testament}
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-1">
-                  {books
+                  {testamentBooks
                     .filter(book => 
                       book.name.toLowerCase().includes(searchTerm.toLowerCase())
                     )
                     .map((book) => (
-                      <div key={book.name}>
+                      <div key={book.id}>
                         <Button
-                          variant={selectedBook === book.name ? "secondary" : "ghost"}
+                          variant={selectedBook === book.id ? "secondary" : "ghost"}
                           className="w-full justify-between text-sm"
-                          onClick={() => setSelectedBook(book.name)}
+                          onClick={() => onBookSelect(book.id)}
                         >
                           {book.name}
                           <ChevronRight className="h-4 w-4" />
                         </Button>
-                        {selectedBook === book.name && (
+                        {selectedBook === book.id && (
                           <div className="ml-4 mt-2 grid grid-cols-5 gap-2">
                             {Array.from({ length: book.chapters }, (_, i) => i + 1).map((chapter) => (
                               <Button
@@ -75,7 +109,7 @@ export function BibleNavigation() {
                                 variant={selectedChapter === chapter ? "default" : "outline"}
                                 size="sm"
                                 className="h-8 w-8"
-                                onClick={() => setSelectedChapter(chapter)}
+                                onClick={() => onChapterSelect(chapter)}
                               >
                                 {chapter}
                               </Button>

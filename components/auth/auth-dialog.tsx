@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { authApi } from "@/lib/api"
+import { toast } from "sonner"
 
 interface AuthDialogProps {
   open: boolean
@@ -21,19 +23,46 @@ interface AuthDialogProps {
 
 export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
   const [tab, setTab] = useState<"login" | "register">("login")
+  const [isLoading, setIsLoading] = useState(false)
   const { register, handleSubmit, reset } = useForm()
 
-  const onSubmit = (data: any) => {
-    // Simulate authentication
-    const mockUser = {
-      id: "1",
-      name: data.name || "Jean Dupont",
-      email: data.email,
-      avatar: "JD"
+  const onSubmit = async (data: any) => {
+    setIsLoading(true)
+    try {
+      let response
+      if (tab === "login") {
+        response = await authApi.login({
+          email: data.email,
+          password: data.password,
+        })
+      } else {
+        response = await authApi.register({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        })
+      }
+      
+      // Stocker le token
+      localStorage.setItem("token", response.token)
+      
+      // Créer l'objet utilisateur avec les initiales
+      const names = response.user.name.split(" ")
+      const initials = names.map((n: string) => n[0]).join("").toUpperCase()
+      const user = {
+        ...response.user,
+        avatar: initials
+      }
+      
+      onSuccess(user)
+      reset()
+      onClose()
+      toast.success(tab === "login" ? "Connexion réussie" : "Inscription réussie")
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Une erreur est survenue")
+    } finally {
+      setIsLoading(false)
     }
-    onSuccess(mockUser)
-    reset()
-    onClose()
   }
 
   return (
@@ -58,6 +87,7 @@ export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
                   type="email"
                   {...register("email")}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -67,10 +97,11 @@ export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
                   type="password"
                   {...register("password")}
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Se connecter
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Chargement..." : "Se connecter"}
               </Button>
             </form>
           </TabsContent>
@@ -83,6 +114,7 @@ export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
                   id="name"
                   {...register("name")}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -92,6 +124,7 @@ export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
                   type="email"
                   {...register("email")}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -101,10 +134,11 @@ export function AuthDialog({ open, onClose, onSuccess }: AuthDialogProps) {
                   type="password"
                   {...register("password")}
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                S'inscrire
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Chargement..." : "S'inscrire"}
               </Button>
             </form>
           </TabsContent>
